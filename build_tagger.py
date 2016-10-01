@@ -13,6 +13,7 @@ FILE_OUT = sys.argv[3]
 TAG_SENT_START = '<s>'
 TAG_SENT_END = '<\s>'
 UNKNOWN_WORD = '<UNK>'
+D = 0.5
 
 sents = []
 devt_sents = []
@@ -82,8 +83,17 @@ for key in tag_tag_pair_count.keys():
 tag_count.pop(TAG_SENT_START, None)
 tag_count.pop(TAG_SENT_END, None)
 # Calculation for emmission probabilities
-for key in word_tag_pair_count.keys():
-    obs_prob[key] = (word_tag_pair_count[key] + 1)/(tag_count[key.split('/')[-1]] + len(vocab))
+for wordtag in word_tag_pair_count.keys():
+    tag = wordtag.split('/')[-1]
+    word = '/'.join(wordtag.split('/')[:-1])
+
+    alpha = (D * sum(1 for w in vocab if word_tag_pair_count['%s/%s'%(w,tag)] > 0))/tag_count[tag]
+
+    obs_prob[key] = (max(word_tag_pair_count[wordtag] - D, 0))/tag_count[tag] +\
+    (alpha * sum(1 for key in tag_count.keys() if word_tag_pair_count['%s/%s'%(word,key)] > 0)/ \
+    sum(1 for key, value in word_tag_pair_count.items() if value > 0))
+
+    # obs_prob[key] = (word_tag_pair_count[wordtag] + 1)/(tag_count[tag] + len(vocab))
 
 with open(FILE_OUT, "w") as outfile:
     json_dump([list(tag_count.keys()), trans_prob, obs_prob], outfile, indent=4)
