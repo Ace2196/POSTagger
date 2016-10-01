@@ -28,8 +28,7 @@ tag_count = defaultdict(int)
 word_tag_pair_count = defaultdict(int)
 tag_tag_pair_count = defaultdict(int)
 
-known_count = defaultdict(int)
-unknown_count = defaultdict(int)
+words_with_tag = defaultdict(int)
 
 trans_prob = defaultdict(float)
 obs_prob = defaultdict(float)
@@ -45,6 +44,8 @@ for sent in sents:
         vocab.add(word)
         tag_count[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
+        if wordtag not in word_tag_pair_count:
+            words_with_tag[tag] += 1
         word_tag_pair_count[wordtag] += 1
         # Iteration step
         prev_tag = tag
@@ -68,6 +69,8 @@ for sent in devt_sents:
             word = UNKNOWN_WORD
         tag_count[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
+        if '%s/%s'%(word,tag) not in word_tag_pair_count:
+            words_with_tag[tag] += 1
         word_tag_pair_count['%s/%s'%(word,tag)] += 1
         # Iteration step
         prev_tag = tag
@@ -83,7 +86,12 @@ tag_count.pop(TAG_SENT_START, None)
 tag_count.pop(TAG_SENT_END, None)
 # Calculation for emmission probabilities
 for key in word_tag_pair_count.keys():
-    obs_prob[key] = (word_tag_pair_count[key] + 1)/(tag_count[key.split('/')[-1]] + len(vocab))
+    tag = key.split('/')[-1]
+    if word_tag_pair_count[key] > 0:
+        obs_prob[key] = word_tag_pair_count[key]/(tag_count[tag] + words_with_tag[tag])
+    else:
+        obs_prob[key] = (words_with_tag[tag])/\
+        ((len(vocab)-words_with_tag[tag])*(tag_count[tag] + words_with_tag[tag]))
 
 with open(FILE_OUT, "w") as outfile:
     json_dump([list(tag_count.keys()), trans_prob, obs_prob], outfile, indent=4)
