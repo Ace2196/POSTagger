@@ -33,7 +33,6 @@ tags = model[0]
 N = len(tags)
 trans_prob = model[1]
 obs_prob = model[2]
-unk_prob = model[3]
 
 def get_trans_prob(t1,t2):
     return trans_prob['%s %s'%(t1,t2)]
