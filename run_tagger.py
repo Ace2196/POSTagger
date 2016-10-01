@@ -22,7 +22,6 @@ sents = []
 sample_outs = []
 with open(FILE_TEST, 'r') as f:
     for s in f:
-        # sents.append(['/'.join(tok.split('/')[:-1]) for tok in s.split()])
         sents.append(s.split())
 with open(FILE_OUT, 'r') as f:
     for s in f:
@@ -39,7 +38,7 @@ def get_trans_prob(t1,t2):
 
 def get_obs_prob(w,t):
     return obs_prob.get('%s/%s'%(w,t),
-                        10**-10) #unk_prob[t] if unk_prob[t]>0 else 10**-10
+                        obs_prob['%s/%s'%(UNKNOWN_WORD,t)]) #obs_prob['%s/%s'%(UNKNOWN_WORD,t)]
 
 for sn,sent in enumerate(sents):
     viterbi = np.zeros((N, len(sent)))
@@ -75,15 +74,14 @@ for sn,sent in enumerate(sents):
     # END of Maximization block
     expected_tags = sample_outs[sn].strip().split(' ')
     sent_tags = ['']*len(sent)
-    sent_tags[-1] = tags[arg_max]
-    for t in range(len(sent)-1, 0, -1):
-        arg_max = backpt[arg_max,t]
-        sent_tags[t-1] = tags[arg_max]
+    # sent_tags[-1] = tags[arg_max]
+    for t in range(len(sent)-1, -1, -1):
+        sent_tags[t] = tags[arg_max]
         if expected_tags[t].split('/')[-1] == sent_tags[t]:
             known_correct += 1
+        arg_max = backpt[arg_max,t]
     sent_tagged = ['%s/%s'%(word,sent_tags[i]) for i,word in enumerate(sent)]
     # print(' '.join(sent_tagged))
     # print(sample_outs[sn])
-    # print('\n')
     known_total += len(expected_tags)
     print(known_correct/known_total)
