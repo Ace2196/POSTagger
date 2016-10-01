@@ -22,10 +22,15 @@ sents = []
 sample_outs = []
 with open(FILE_TEST, 'r') as f:
     for s in f:
-        sents.append(s.split())
+        sents.append(['/'.join(tok.split('/')[:-1]) for tok in s.split()])
+        # sents.append(s.split())
+        if len(sents) == 100:
+            break
 with open(FILE_OUT, 'r') as f:
     for s in f:
         sample_outs.append(s)
+        if len(sample_outs) == 100:
+            break
 with open(FILE_MODEL) as model_file:
     model = json_load(model_file)
 tags = model[0]
@@ -60,6 +65,9 @@ for sn,sent in enumerate(sents):
                     val_max = val_this
                     arg_max = j
             # END of Maximization block
+            if get_obs_prob(sent[t],tag) == 0:
+                if obs_prob['%s/%s'%(UNKNOWN_WORD,tag)] == 0:
+                    print('%s/%s'%(sent[t],tag))
             viterbi[i,t] = val_max + np.log(get_obs_prob(sent[t],tag))
             backpt[i,t] = arg_max
 

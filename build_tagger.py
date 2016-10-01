@@ -22,6 +22,8 @@ with open(FILE_TRAIN, 'r') as f:
         sents.append(s.split())
 with open(FILE_DEVT, 'r') as f:
     for s in f:
+        if len(devt_sents) == 100:
+            devt_sents=[]
         devt_sents.append(s.split())
 
 vocab = set()
@@ -29,8 +31,8 @@ tag_count = defaultdict(int)
 word_tag_pair_count = defaultdict(int)
 tag_tag_pair_count = defaultdict(int)
 
-known_count = defaultdict(int)
-unknown_count = defaultdict(int)
+words_with_tag = defaultdict(int)
+tags_for_word = defaultdict(int)
 
 trans_prob = defaultdict(float)
 obs_prob = defaultdict(float)
@@ -46,6 +48,9 @@ for sent in sents:
         vocab.add(word)
         tag_count[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
+        if wordtag not in word_tag_pair_count:
+            words_with_tag[tag] += 1
+            tags_for_word[word] += 1
         word_tag_pair_count[wordtag] += 1
         # Iteration step
         prev_tag = tag
@@ -69,6 +74,9 @@ for sent in devt_sents:
             word = UNKNOWN_WORD
         tag_count[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
+        if word_tag_pair_count['%s/%s'%(word,tag)] == 0:
+            words_with_tag[tag] += 1
+            tags_for_word[word] += 1
         word_tag_pair_count['%s/%s'%(word,tag)] += 1
         # Iteration step
         prev_tag = tag
@@ -83,17 +91,14 @@ for key in tag_tag_pair_count.keys():
 tag_count.pop(TAG_SENT_START, None)
 tag_count.pop(TAG_SENT_END, None)
 # Calculation for emmission probabilities
+seen_wordtag_count = sum(1 for val in word_tag_pair_count.values() if val > 0)
 for wordtag in word_tag_pair_count.keys():
     tag = wordtag.split('/')[-1]
     word = '/'.join(wordtag.split('/')[:-1])
 
-    alpha = (D * sum(1 for w in vocab if word_tag_pair_count['%s/%s'%(w,tag)] > 0))/tag_count[tag]
-
-    obs_prob[key] = (max(word_tag_pair_count[wordtag] - D, 0))/tag_count[tag] +\
-    (alpha * sum(1 for key in tag_count.keys() if word_tag_pair_count['%s/%s'%(word,key)] > 0)/ \
-    sum(1 for key, value in word_tag_pair_count.items() if value > 0))
-
-    # obs_prob[key] = (word_tag_pair_count[wordtag] + 1)/(tag_count[tag] + len(vocab))
+    alpha = (D * words_with_tag[tag])/tag_count[tag]
+    obs_prob[wordtag] = (max(word_tag_pair_count[wordtag] - D, 0))/tag_count[tag] +\
+    (alpha * tags_for_word[word]/seen_wordtag_count)
 
 with open(FILE_OUT, "w") as outfile:
     json_dump([list(tag_count.keys()), trans_prob, obs_prob], outfile, indent=4)
