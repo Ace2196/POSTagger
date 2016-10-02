@@ -21,6 +21,8 @@ with open(FILE_TRAIN, 'r') as f:
         sents.append(s.split())
 with open(FILE_DEVT, 'r') as f:
     for s in f:
+        if len(devt_sents) == 100:
+            devt_sents = []
         devt_sents.append(s.split())
 
 vocab = set()
