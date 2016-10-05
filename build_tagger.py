@@ -33,6 +33,7 @@ tag_tag_pair_count = defaultdict(int)
 
 words_with_tag = defaultdict(int)
 tags_for_word = defaultdict(int)
+word_count = defaultdict(int)
 
 trans_prob = defaultdict(float)
 obs_prob = defaultdict(float)
@@ -46,6 +47,7 @@ for sent in sents:
         word = '/'.join(wordtag.split('/')[:-1])
         # Update appropriate counts
         vocab.add(word)
+        word_count[word] += 1
         tag_count[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
         if wordtag not in word_tag_pair_count:
@@ -72,6 +74,7 @@ for sent in devt_sents:
         # Update appropriate counts
         if word not in vocab:
             word = UNKNOWN_WORD
+        word_count[word] += 1
         tag_count[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
         if word_tag_pair_count['%s/%s'%(word,tag)] == 0:
@@ -97,8 +100,10 @@ for wordtag in word_tag_pair_count.keys():
     word = '/'.join(wordtag.split('/')[:-1])
 
     alpha = (D * words_with_tag[tag])/tag_count[tag]
-    obs_prob[wordtag] = (max(word_tag_pair_count[wordtag] - D, 0))/tag_count[tag] +\
+    bigram_prob = (max(word_tag_pair_count[wordtag] - D, 0))/tag_count[tag] +\
     (alpha * tags_for_word[word]/seen_wordtag_count)
+    unigram_prob = word_count[word]/len(vocab)
+    obs_prob[wordtag] = (0.95)*bigram_prob + (0.05)*unigram_prob
 
 with open(FILE_OUT, "w") as outfile:
     json_dump([list(tag_count.keys()), trans_prob, obs_prob], outfile, indent=4)
