@@ -103,7 +103,7 @@ for wordtag in word_tag_pair_count.keys():
     bigram_prob = (max(word_tag_pair_count[wordtag] - D, 0))/tag_count[tag] +\
     (alpha * tags_for_word[word]/seen_wordtag_count)
     unigram_prob = word_count[word]/len(vocab)
-    obs_prob[wordtag] = (0.95)*bigram_prob + (0.05)*unigram_prob
+    obs_prob[wordtag] = (0.9)*bigram_prob + (0.1)*unigram_prob
 
 with open(FILE_OUT, "w") as outfile:
     json_dump([list(tag_count.keys()), trans_prob, obs_prob], outfile, indent=4)

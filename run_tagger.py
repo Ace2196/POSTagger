@@ -6,7 +6,8 @@ import sys
 # Populate program argument variables
 FILE_TEST = sys.argv[1]
 FILE_MODEL = sys.argv[2]
-FILE_OUT = sys.argv[3]
+FILE_SAMPLE = sys.argv[3]
+FILE_OUT = sys.argv[4]
 
 #Default variables
 TAG_SENT_START = '<s>'
@@ -26,13 +27,14 @@ with open(FILE_TEST, 'r') as f:
         # sents.append(s.split())
         if len(sents) == 100:
             break
-with open(FILE_OUT, 'r') as f:
+with open(FILE_SAMPLE, 'r') as f:
     for s in f:
         sample_outs.append(s)
         if len(sample_outs) == 100:
             break
 with open(FILE_MODEL) as model_file:
     model = json_load(model_file)
+fo = open(FILE_OUT,'w')
 tags = model[0]
 N = len(tags)
 trans_prob = model[1]
@@ -89,7 +91,9 @@ for sn,sent in enumerate(sents):
             known_correct += 1
         arg_max = backpt[arg_max,t]
     sent_tagged = ['%s/%s'%(word,sent_tags[i]) for i,word in enumerate(sent)]
+    fo.write(' '.join(sent_tagged)+'\n')
     # print(' '.join(sent_tagged))
     # print(sample_outs[sn])
     known_total += len(expected_tags)
     print(known_correct/known_total)
+fo.close()
