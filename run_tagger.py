@@ -25,13 +25,9 @@ with open(FILE_TEST, 'r') as f:
     for s in f:
         sents.append(['/'.join(tok.split('/')[:-1]) for tok in s.split()])
         # sents.append(s.split())
-        if len(sents) == 100:
-            break
 with open(FILE_SAMPLE, 'r') as f:
     for s in f:
         sample_outs.append(s)
-        if len(sample_outs) == 100:
-            break
 f_out = open(FILE_OUT, 'w')
 with open(FILE_MODEL) as model_file:
     model = json_load(model_file)
