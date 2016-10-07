@@ -7,7 +7,7 @@ import sys
 FILE_TEST = sys.argv[1]
 FILE_MODEL = sys.argv[2]
 FILE_SAMPLE = sys.argv[3]
-FILE_OUT = sys.argv[4]
+FILE_OUT = 'out.txt'
 
 #Default variables
 TAG_SENT_START = '<s>'
@@ -23,8 +23,7 @@ sents = []
 sample_outs = []
 with open(FILE_TEST, 'r') as f:
     for s in f:
-        sents.append(['/'.join(tok.split('/')[:-1]) for tok in s.split()])
-        # sents.append(s.split())
+        sents.append(s.split())
 with open(FILE_SAMPLE, 'r') as f:
     for s in f:
         sample_outs.append(s)
