@@ -13,6 +13,7 @@ FILE_OUT = sys.argv[3]
 TAG_SENT_START = '<s>'
 TAG_SENT_END = '<\s>'
 UNKNOWN_WORD = '<UNK>'
+D=0.5
 
 sents = []
 devt_sents = []
@@ -30,6 +31,9 @@ tag_tag_pair_count = defaultdict(int)
 
 words_with_tag = defaultdict(int)
 
+tags_after_tag = defaultdict(int)
+tags_before_tag = defaultdict(int)
+
 trans_prob = defaultdict(float)
 obs_prob = defaultdict(float)
 
@@ -43,6 +47,9 @@ for sent in sents:
         # Update appropriate counts
         vocab.add(word)
         tag_count[tag] += 1
+        if '%s %s'%(prev_tag, tag) not in tag_tag_pair_count:
+            tags_after_tag[prev_tag] += 1
+            tags_before_tag[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
         if wordtag not in word_tag_pair_count:
             words_with_tag[tag] += 1
@@ -50,6 +57,9 @@ for sent in sents:
         # Iteration step
         prev_tag = tag
     tag_count[TAG_SENT_END] += 1
+    if '%s %s'%(prev_tag, TAG_SENT_END) not in tag_tag_pair_count:
+        tags_after_tag[prev_tag] += 1
+        tags_before_tag[TAG_SENT_END] += 1
     tag_tag_pair_count['%s %s'%(prev_tag, TAG_SENT_END)] += 1
 
 # Tweak counts from training set with development set
@@ -68,6 +78,9 @@ for sent in devt_sents:
         if word not in vocab:
             word = UNKNOWN_WORD
         tag_count[tag] += 1
+        if '%s %s'%(prev_tag, tag) not in tag_tag_pair_count:
+            tags_after_tag[prev_tag] += 1
+            tags_before_tag[tag] += 1
         tag_tag_pair_count['%s %s'%(prev_tag, tag)] += 1
         if '%s/%s'%(word,tag) not in word_tag_pair_count:
             words_with_tag[tag] += 1
@@ -75,16 +88,29 @@ for sent in devt_sents:
         # Iteration step
         prev_tag = tag
     tag_count[TAG_SENT_END] += 1
+    if '%s %s'%(prev_tag, TAG_SENT_END) not in tag_tag_pair_count:
+        tags_after_tag[prev_tag] += 1
+        tags_before_tag[TAG_SENT_END] += 1
     tag_tag_pair_count['%s %s'%(prev_tag, TAG_SENT_END)] += 1
 
-# Calculation for smoothed transition probabilities
+# Calculation for transition probabilities with Kneser Ney Smoothing
+seen_tagtag_count = 0
 for tag1, tag2 in itertools.product(tag_count.keys(), tag_count.keys()):
-    tag_tag_pair_count.setdefault('%s %s'%(tag1, tag2), 0)
-for key in tag_tag_pair_count.keys():
-    trans_prob[key] = (tag_tag_pair_count[key] + 1)/(tag_count[key.split()[0]] + len(tag_tag_pair_count.keys()))
+    if '%s %s'%(tag1, tag2) in tag_tag_pair_count:
+        seen_tagtag_count += 1
+    else:
+        tag_tag_pair_count.setdefault('%s %s'%(tag1, tag2), 0)
+for tagtag in tag_tag_pair_count.keys():
+    tag0 = tagtag.split(' ')[0]
+    tag1 = tagtag.split(' ')[-1]
+
+    alpha = (D * tags_after_tag[tag0])/tag_count[tag0]
+    trans_prob[tagtag] = (max(tag_tag_pair_count[tagtag] - D, 0))/tag_count[tag0] +\
+    (alpha * tags_before_tag[tag1]/seen_tagtag_count)
 tag_count.pop(TAG_SENT_START, None)
 tag_count.pop(TAG_SENT_END, None)
-# Calculation for emmission probabilities
+
+# Calculation for emmission probabilities with Witten Bell Smoothing
 for key in word_tag_pair_count.keys():
     tag = key.split('/')[-1]
     if word_tag_pair_count[key] > 0:
@@ -93,5 +119,6 @@ for key in word_tag_pair_count.keys():
         obs_prob[key] = (words_with_tag[tag])/\
         ((len(vocab)-words_with_tag[tag])*(tag_count[tag] + words_with_tag[tag]))
 
+# Model file is populated as a simple JSON dump. This makes it easier to pick up in run_tagger
 with open(FILE_OUT, "w") as outfile:
     json_dump([list(tag_count.keys()), trans_prob, obs_prob], outfile, indent=4)
