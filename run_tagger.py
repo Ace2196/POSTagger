@@ -23,7 +23,6 @@ sents = []
 sample_outs = []
 with open(FILE_TEST, 'r') as f:
     for s in f:
-        # sents.append(['/'.join(tok.split('/')[:-1]) for tok in s.split()])
         sents.append(s.split())
 with open(FILE_SAMPLE, 'r') as f:
     for s in f:
@@ -88,5 +87,5 @@ for sn,sent in enumerate(sents):
     # print(' '.join(sent_tagged))
     # print(sample_outs[sn])
     known_total += len(expected_tags)
-    print(known_correct/known_total)
+    print('Accuracy: %f'%(known_correct/known_total))
 f.close()
